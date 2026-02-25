@@ -10,11 +10,13 @@ public class LuaParserTest extends CompilerTest {
 	@Override
 	protected void doTest(String name) {
 		try {
-			LuaParser parser = new LuaParser(inputStreamOfLua(name), UTF_8);
+			LuaParser parser = new LuaParser(inputStreamOfLua(name), UTF_8.name());
 			parser.Chunk();
 		} catch (Exception e) {
 			fail(e.getMessage());
 			e.printStackTrace();
 		}
 	}
+
+
 }

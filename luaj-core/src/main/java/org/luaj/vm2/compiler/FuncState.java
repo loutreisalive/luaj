@@ -34,6 +34,8 @@ import org.luaj.vm2.Upvaldesc;
 import org.luaj.vm2.compiler.LexState.ConsControl;
 import org.luaj.vm2.compiler.LexState.expdesc;
 
+import static org.luaj.vm2.compiler.LexState.NO_JUMP;
+
 public class FuncState extends Constants {
 
 	static class BlockCnt {
@@ -43,6 +45,7 @@ public class FuncState extends Constants {
 		short    nactvar;    /* # active locals outside the breakable structure */
 		boolean  upval;      /* true if some variable in the block is an upvalue */
 		boolean  isloop;     /* true if `block' is a loop */
+		int			 continuelist;
 	}
 
 	Prototype f;          /* current function header */
@@ -202,6 +205,7 @@ public class FuncState extends Constants {
 	}
 
 	void enterblock(BlockCnt bl, boolean isloop) {
+		bl.continuelist = NO_JUMP;
 		bl.isloop = isloop;
 		bl.nactvar = nactvar;
 		bl.firstlabel = (short) ls.dyd.n_label;
@@ -293,8 +297,8 @@ public class FuncState extends Constants {
 
 	int jump() {
 		int jpc = this.jpc.i; /* save list of jumps to here */
-		this.jpc.i = LexState.NO_JUMP;
-		IntPtr j = new IntPtr(this.codeAsBx(OP_JMP, 0, LexState.NO_JUMP));
+		this.jpc.i = NO_JUMP;
+		IntPtr j = new IntPtr(this.codeAsBx(OP_JMP, 0, NO_JUMP));
 		this.concat(j, jpc); /* keep them on hold */
 		return j.i;
 	}
@@ -311,7 +315,7 @@ public class FuncState extends Constants {
 	void fixjump(int pc, int dest) {
 		InstructionPtr jmp = new InstructionPtr(this.f.code, pc);
 		int offset = dest-(pc+1);
-		_assert(dest != LexState.NO_JUMP);
+		_assert(dest != NO_JUMP);
 		if (Math.abs(offset) > MAXARG_sBx)
 			ls.syntaxerror("control structure too long");
 		SETARG_sBx(jmp, offset);
@@ -329,9 +333,9 @@ public class FuncState extends Constants {
 	int getjump(int pc) {
 		int offset = GETARG_sBx(this.f.code[pc]);
 		/* point to itself represents end of list */
-		if (offset == LexState.NO_JUMP)
+		if (offset == NO_JUMP)
 			/* end of list */
-			return LexState.NO_JUMP;
+			return NO_JUMP;
 		else
 			/* turn offset into absolute position */
 			return pc+1+offset;
@@ -350,7 +354,7 @@ public class FuncState extends Constants {
 	 * produce an inverted value)
 	 */
 	boolean need_value(int list) {
-		for (; list != LexState.NO_JUMP; list = this.getjump(list)) {
+		for (; list != NO_JUMP; list = this.getjump(list)) {
 			int i = this.getjumpcontrol(list).get();
 			if (GET_OPCODE(i) != OP_TESTSET)
 				return true;
@@ -373,12 +377,12 @@ public class FuncState extends Constants {
 	}
 
 	void removevalues(int list) {
-		for (; list != LexState.NO_JUMP; list = this.getjump(list))
+		for (; list != NO_JUMP; list = this.getjump(list))
 			this.patchtestreg(list, NO_REG);
 	}
 
 	void patchlistaux(int list, int vtarget, int reg, int dtarget) {
-		while ( list != LexState.NO_JUMP ) {
+		while ( list != NO_JUMP ) {
 			int next = this.getjump(list);
 			if (this.patchtestreg(list, reg))
 				this.fixjump(list, vtarget);
@@ -390,7 +394,7 @@ public class FuncState extends Constants {
 
 	void dischargejpc() {
 		this.patchlistaux(this.jpc.i, this.pc, NO_REG, this.pc);
-		this.jpc.i = LexState.NO_JUMP;
+		this.jpc.i = NO_JUMP;
 	}
 
 	void patchlist(int list, int target) {
@@ -404,7 +408,7 @@ public class FuncState extends Constants {
 
 	void patchclose(int list, int level) {
 		level++; /* argument is +1 to reserve 0 as non-op */
-		while ( list != LexState.NO_JUMP ) {
+		while ( list != NO_JUMP ) {
 			int next = getjump(list);
 			_assert(
 				GET_OPCODE(f.code[list]) == OP_JMP && (GETARG_A(f.code[list]) == 0 || GETARG_A(f.code[list]) >= level));
@@ -419,14 +423,14 @@ public class FuncState extends Constants {
 	}
 
 	void concat(IntPtr l1, int l2) {
-		if (l2 == LexState.NO_JUMP)
+		if (l2 == NO_JUMP)
 			return;
-		if (l1.i == LexState.NO_JUMP)
+		if (l1.i == NO_JUMP)
 			l1.i = l2;
 		else {
 			int list = l1.i;
 			int next;
-			while ( (next = this.getjump(list)) != LexState.NO_JUMP )
+			while ( (next = this.getjump(list)) != NO_JUMP )
 				/* find last element */
 				list = next;
 			this.fixjump(list, l2);
@@ -605,10 +609,10 @@ public class FuncState extends Constants {
 			this.concat(e.t, e.u.info); /* put this jump in `t' list */
 		if (e.hasjumps()) {
 			int _final; /* position after whole expression */
-			int p_f = LexState.NO_JUMP; /* position of an eventual LOAD false */
-			int p_t = LexState.NO_JUMP; /* position of an eventual LOAD true */
+			int p_f = NO_JUMP; /* position of an eventual LOAD false */
+			int p_t = NO_JUMP; /* position of an eventual LOAD true */
 			if (this.need_value(e.t.i) || this.need_value(e.f.i)) {
-				int fj = e.k == LexState.VJMP? LexState.NO_JUMP: this.jump();
+				int fj = e.k == LexState.VJMP? NO_JUMP: this.jump();
 				p_f = this.code_label(reg, 0, 1);
 				p_t = this.code_label(reg, 1, 0);
 				this.patchtohere(fj);
@@ -617,7 +621,7 @@ public class FuncState extends Constants {
 			this.patchlistaux(e.f.i, _final, reg, p_f);
 			this.patchlistaux(e.t.i, _final, reg, p_t);
 		}
-		e.f.i = e.t.i = LexState.NO_JUMP;
+		e.f.i = e.t.i = NO_JUMP;
 		e.u.info = reg;
 		e.k = LexState.VNONRELOC;
 	}
@@ -760,7 +764,7 @@ public class FuncState extends Constants {
 		case LexState.VK:
 		case LexState.VKNUM:
 		case LexState.VTRUE: {
-			pc = LexState.NO_JUMP; /* always true; do nothing */
+			pc = NO_JUMP; /* always true; do nothing */
 			break;
 		}
 		default: {
@@ -770,7 +774,7 @@ public class FuncState extends Constants {
 		}
 		this.concat(e.f, pc); /* insert last jump in `f' list */
 		this.patchtohere(e.t.i);
-		e.t.i = LexState.NO_JUMP;
+		e.t.i = NO_JUMP;
 	}
 
 	void goiffalse(expdesc e) {
@@ -783,7 +787,7 @@ public class FuncState extends Constants {
 		}
 		case LexState.VNIL:
 		case LexState.VFALSE: {
-			pc = LexState.NO_JUMP; /* always false; do nothing */
+			pc = NO_JUMP; /* always false; do nothing */
 			break;
 		}
 		default: {
@@ -793,7 +797,7 @@ public class FuncState extends Constants {
 		}
 		this.concat(e.t, pc); /* insert last jump in `t' list */
 		this.patchtohere(e.f.i);
-		e.f.i = LexState.NO_JUMP;
+		e.f.i = NO_JUMP;
 	}
 
 	void codenot(expdesc e) {
@@ -988,7 +992,7 @@ public class FuncState extends Constants {
 	void posfix(int op, expdesc e1, expdesc e2, int line) {
 		switch (op) {
 		case LexState.OPR_AND: {
-			_assert(e1.t.i == LexState.NO_JUMP); /* list must be closed */
+			_assert(e1.t.i == NO_JUMP); /* list must be closed */
 			this.dischargevars(e2);
 			this.concat(e2.f, e1.f.i);
 			// *e1 = *e2;
@@ -996,7 +1000,7 @@ public class FuncState extends Constants {
 			break;
 		}
 		case LexState.OPR_OR: {
-			_assert(e1.f.i == LexState.NO_JUMP); /* list must be closed */
+			_assert(e1.f.i == NO_JUMP); /* list must be closed */
 			this.dischargevars(e2);
 			this.concat(e2.t, e1.t.i);
 			// *e1 = *e2;

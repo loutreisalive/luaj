@@ -5,20 +5,20 @@
 
 
 local function nsieve(m,isPrime)
-   for i=2,m do
-      isPrime[i] = true
-   end
-   local count = 0
+    for i=2,m do
+        isPrime[i] = true
+    end
+    local count = 0
 
-   for i=2,m do
-      if isPrime[i] then
-         for k=i+i, m, i do
-            if isPrime[k] then isPrime[k] = false end
-         end
-         count = count + 1
-      end
-   end
-   return count
+    for i=2,m do
+        if isPrime[i] then
+            for k=i+i, m, i do
+                if isPrime[k] then isPrime[k] = false end
+            end
+            count = count + 1
+        end
+    end
+    return count
 end
 
 

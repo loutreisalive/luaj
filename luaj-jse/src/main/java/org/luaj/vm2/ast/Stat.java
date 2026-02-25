@@ -41,7 +41,10 @@ abstract public class Stat extends SyntaxElement {
 	}
 
 	public static Stat breakstat() {
-		return new Break();
+    return new Unused();
+	}
+	public static Stat continuestat() {
+    return new Unused();
 	}
 
 	public static Stat returnstat(List<Exp> exps) {
@@ -161,12 +164,13 @@ abstract public class Stat extends SyntaxElement {
 		}
 	}
 
-	public static class Break extends Stat {
+	public static class Unused extends Stat {
 		@Override
 		public void accept(Visitor visitor) {
 			visitor.visit(this);
 		}
 	}
+
 
 	public static class Return extends Stat {
 		public final List<Exp> values;

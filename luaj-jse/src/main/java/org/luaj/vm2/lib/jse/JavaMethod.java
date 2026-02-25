@@ -23,6 +23,7 @@ package org.luaj.vm2.lib.jse;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -72,6 +73,10 @@ class JavaMethod extends JavaMember {
 
 	@Override
 	public LuaValue call() {
+		if(Modifier.isStatic(method.getModifiers())) {
+			return invokeMethod(null, LuaValue.NONE);
+		}
+
 		return error("method cannot be called without instance");
 	}
 

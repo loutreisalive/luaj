@@ -31,23 +31,23 @@ import org.luaj.vm2.lib.jse.JsePlatform;
 public class TestLuaJ {
 	// create the script
 	public static String name   = "script";
-	public static String script = "function r(q,...)\n" + "	local a=arg\n" + "	return a and a[2]\n" + "end\n"
-		+ "function s(q,...)\n" + "	local a=arg\n" + "	local b=...\n" + "	return a and a[2],b\n" + "end\n"
-		+ "print( r(111,222,333),s(111,222,333) )";
+  public static String script =
+      "for i = 1, 10 do\n"
+          + "    if i == 5 then\n"
+          + "        continue\n"
+          + "    end\n"
+          + "    print(i)\n"
+          + "end";
 
 	public static void main(String[] args) throws Exception {
 		System.out.println(script);
 
-		// create an environment to run in
 		Globals globals = JsePlatform.standardGlobals();
 
-		// compile into a chunk, or load as a class
 		LuaValue chunk = globals.load(script, "script");
 
-		// The loaded chunk should be a closure, which contains the prototype.
 		print(chunk.checkclosure().p);
 
-		// The chunk can be called with arguments as desired.
 		chunk.call(LuaValue.ZERO, LuaValue.ONE);
 	}
 

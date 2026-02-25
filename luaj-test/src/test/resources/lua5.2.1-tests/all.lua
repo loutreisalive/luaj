@@ -1,7 +1,7 @@
 #!../lua
 
 local version = "Lua 5.2"
-if _VERSION ~= version then
+if _VERSION != version then
   io.stderr:write("\nThis test suite is for ", version, ", not for ", _VERSION,
     "\nExiting tests\n")
   return

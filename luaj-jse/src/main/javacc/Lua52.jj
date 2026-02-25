@@ -15,7 +15,7 @@
 
 options {
   STATIC = false;
-  JDK_VERSION = "1.3";
+  JDK_VERSION = "21";
   ERROR_REPORTING = false;
   DEBUG_LOOKAHEAD = false;
   DEBUG_PARSER = false;
@@ -92,6 +92,7 @@ TOKEN :
 {
   <AND: "and">
 | <BREAK: "break">
+| <CONTINUE: "continue">
 | <DO: "do">
 | <ELSE: "else">
 | <ELSEIF: "elseif">
@@ -157,6 +158,7 @@ void Stat():
 	";"
 |	Label()
 |	<BREAK>
+|   <CONTINUE>
 |	<GOTO> <NAME>
 |	<DO> Block() <END>
 |	<WHILE> Exp() <DO> Block() <END>
@@ -353,7 +355,7 @@ void FieldSep():
 void Binop():
 {}
 {
-   "+" | "-" | "*" | "/" | "^" | "%" | ".." | "<" | "<=" | ">" | ">=" | "==" | "~=" | <AND> | <OR>
+   "+" | "-" | "*" | "/" | "^" | "%" | ".." | "<" | "<=" | ">" | ">=" | "==" | "~=" | "!=" | <AND> | <OR>
 }
 
 void Unop():

@@ -26,7 +26,7 @@
 
 options {
   STATIC = false;
-  JDK_VERSION = "1.3";
+  JDK_VERSION = "21";
   ERROR_REPORTING = true;
   UNICODE_INPUT = true;
   DEBUG_LOOKAHEAD = false;
@@ -46,7 +46,8 @@ public class LuaParser {
   	LuaValue.valueOf(true);
   }
 
-  public static void main(String args[]) throws ParseException {
+
+  static void main(String args[]) throws ParseException {
     LuaParser parser = new LuaParser(System.in);
     parser.Chunk();
   }
@@ -142,6 +143,7 @@ TOKEN :
 {
   <AND: "and">
 | <BREAK: "break">
+| <CONTINUE: "continue">
 | <DO: "do">
 | <ELSE: "else">
 | <ELSEIF: "elseif">
@@ -225,6 +227,7 @@ Stat Stat():
 	";" { return null; }
 |	s=Label() { L(s,i); return s; } 
 |	<BREAK> { s=Stat.breakstat(); L(s,i); return s; }
+|   <CONTINUE> { s=Stat.continuestat(); L(s,i); return s; }
 |	<GOTO> n=<NAME> { s=Stat.gotostat(n.image); L(s,i); return s; }
 |	<DO> b=Block() <END> { s=Stat.block(b); L(s,i); return s; }
 |	<WHILE> e=Exp() <DO> b=Block() <END> { s=Stat.whiledo(e,b); L(s,i); return s; }
@@ -517,7 +520,8 @@ int Binop():
 |	">"   { return Lua.OP_GT;  } 
 |	">="  { return Lua.OP_GE;  }
 |	"=="  { return Lua.OP_EQ;  } 
-|	"~="  { return Lua.OP_NEQ; } 
+|	"~="  { return Lua.OP_NEQ; }
+|   "!="  { return Lua.OP_NEQ; }
 |	<AND> { return Lua.OP_AND; } 
 |	<OR>  { return Lua.OP_OR;  }
 }

@@ -84,30 +84,27 @@ abstract class PlatformTestCase extends ResourcesTestCase {
 			final ByteArrayOutputStream output = new ByteArrayOutputStream();
 			final PrintStream oldps = globals.STDOUT;
 			final PrintStream ps = new PrintStream(output);
-			globals.STDOUT = ps;
 
 			// run the script
-			try {
+			try (ps) {
+				globals.STDOUT = ps;
 				LuaValue chunk = loadScript(testName, globals);
 				chunk.call(LuaValue.valueOf(platform.toString()));
 
 				ps.flush();
-				String actualOutput = new String(output.toByteArray());
+				String actualOutput = output.toString();
 				String expectedOutput = getExpectedOutput(testName);
 				actualOutput = actualOutput.replaceAll("\r\n", "\n");
 				expectedOutput = expectedOutput.replaceAll("\r\n", "\n");
 
 				if (!expectedOutput.equals(actualOutput))
-					Files.write(new File(testName + ".out").toPath(), actualOutput.getBytes(), new OpenOption[0]);
+					Files.write(new File(testName + ".out").toPath(), actualOutput.getBytes());
 				assertEquals(expectedOutput, actualOutput);
 			} finally {
 				globals.STDOUT = oldps;
-				ps.close();
 			}
-		} catch (IOException ioe) {
+		} catch (IOException | InterruptedException ioe) {
 			throw new RuntimeException(ioe.toString());
-		} catch (InterruptedException ie) {
-			throw new RuntimeException(ie.toString());
 		}
 	}
 
@@ -170,13 +167,13 @@ abstract class PlatformTestCase extends ResourcesTestCase {
 		Runtime r = Runtime.getRuntime();
 		final ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		new JseProcess(cmd, input, baos, System.err).waitFor();
-		return new String(baos.toByteArray());
+		return baos.toString();
 	}
 
 	private static String readString(InputStream is) throws IOException {
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		copy(is, baos);
-		return new String(baos.toByteArray());
+		return baos.toString();
 	}
 
 	private static void copy(InputStream is, OutputStream os) throws IOException {
