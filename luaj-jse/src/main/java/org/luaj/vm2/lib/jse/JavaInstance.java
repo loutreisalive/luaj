@@ -38,11 +38,11 @@ import org.luaj.vm2.LuaValue;
  * @see CoerceJavaToLua
  * @see CoerceLuaToJava
  */
-class JavaInstance extends LuaUserdata {
+class JavaInstance<T> extends LuaUserdata<T> {
 
 	JavaClass jClass;
 
-	JavaInstance(Object instance) {
+	JavaInstance(T instance) {
 		super(instance);
 	}
 
@@ -60,7 +60,7 @@ class JavaInstance extends LuaUserdata {
 		LuaValue m = jClass.getMethod(key);
 		if (m != null)
 			return m;
-		Class c = jClass.getInnerClass(key);
+		Class<?> c = jClass.getInnerClass(key);
 		if (c != null)
 			return JavaClass.forClass(c);
 		return super.get(key);

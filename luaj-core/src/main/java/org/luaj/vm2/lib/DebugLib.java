@@ -407,7 +407,8 @@ public class DebugLib extends TwoArgFunction {
 		public Varargs invoke(Varargs args) {
 			Object o = args.checkuserdata(1);
 			LuaValue v = args.checkvalue(2);
-			LuaUserdata u = (LuaUserdata) args.arg1();
+			@SuppressWarnings("rawtypes")
+			LuaUserdata u = (LuaUserdata<?>) args.arg1();
 			u.m_instance = v.checkuserdata();
 			u.m_metatable = v.getmetatable();
 			return NONE;

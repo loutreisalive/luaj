@@ -25,6 +25,7 @@ import java.lang.reflect.Array;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Function;
 
 import org.luaj.vm2.LuaString;
 import org.luaj.vm2.LuaTable;
@@ -81,7 +82,7 @@ public class CoerceLuaToJava {
 		return getCoercion(clazz).coerce(value);
 	}
 
-	static final Map COERCIONS = Collections.synchronizedMap(new HashMap());
+	static final Map<Class<?>, Coercion> COERCIONS = Collections.synchronizedMap(new HashMap<>());
 
 	static final class BoolCoercion implements Coercion {
 		@Override
@@ -373,6 +374,20 @@ public class CoerceLuaToJava {
 		}
 	}
 
+	public static <T> void register(Class<T> clazz, Function<LuaValue, T> func) {
+		COERCIONS.put(clazz, new Coercion() {
+			@Override
+			public int score(LuaValue value) {
+				return value.istable() ? 0 : SCORE_UNCOERCIBLE;
+			}
+
+			@Override
+			public Object coerce(LuaValue value) {
+				return func.apply(value);
+			}
+		});
+	}
+
 	static {
 		Coercion boolCoercion = new BoolCoercion();
 		Coercion byteCoercion = new NumericCoercion(NumericCoercion.TARGET_TYPE_BYTE);
@@ -404,6 +419,7 @@ public class CoerceLuaToJava {
 		COERCIONS.put(String.class, stringCoercion);
 		COERCIONS.put(byte[].class, bytesCoercion);
 	}
+
 
 	static Coercion getCoercion(Class c) {
 		Coercion co = (Coercion) COERCIONS.get(c);

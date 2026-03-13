@@ -39,12 +39,12 @@ import org.luaj.vm2.lib.OneArgFunction;
  * @see CoerceJavaToLua
  * @see CoerceLuaToJava
  */
-class JavaArray extends LuaUserdata {
-
+class JavaArray<T> extends LuaUserdata<T[]> {
 	private static final class LenFunction extends OneArgFunction {
 		@Override
 		public LuaValue call(LuaValue u) {
-			return LuaValue.valueOf(Array.getLength(((LuaUserdata) u).m_instance));
+			//noinspection unchecked
+			return LuaValue.valueOf(((LuaUserdata<Object[]>) u).m_instance.length);
 		}
 	}
 
@@ -56,7 +56,7 @@ class JavaArray extends LuaUserdata {
 		array_metatable.rawset(LuaValue.LEN, new LenFunction());
 	}
 
-	JavaArray(Object instance) {
+	JavaArray(T[] instance) {
 		super(instance);
 		setmetatable(array_metatable);
 	}

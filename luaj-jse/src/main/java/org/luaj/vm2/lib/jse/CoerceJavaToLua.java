@@ -24,6 +24,7 @@ package org.luaj.vm2.lib.jse;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Function;
 
 import org.luaj.vm2.LuaDouble;
 import org.luaj.vm2.LuaInteger;
@@ -88,7 +89,7 @@ public class CoerceJavaToLua {
 		@Override
 		public LuaValue coerce(Object javaValue) {
 			Character c = (Character) javaValue;
-			return LuaInteger.valueOf(c.charValue());
+			return LuaInteger.valueOf(c);
 		}
 	}
 
@@ -117,22 +118,21 @@ public class CoerceJavaToLua {
 	private static final class ClassCoercion implements Coercion {
 		@Override
 		public LuaValue coerce(Object javaValue) {
-			return JavaClass.forClass((Class) javaValue);
+			return JavaClass.forClass((Class<?>) javaValue);
 		}
 	}
 
 	private static final class InstanceCoercion implements Coercion {
 		@Override
 		public LuaValue coerce(Object javaValue) {
-			return new JavaInstance(javaValue);
+			return new JavaInstance<>(javaValue);
 		}
 	}
 
 	private static final class ArrayCoercion implements Coercion {
 		@Override
 		public LuaValue coerce(Object javaValue) {
-			// should be userdata?
-			return new JavaArray(javaValue);
+			return new JavaArray<>((Object[]) javaValue);
 		}
 	}
 
@@ -143,7 +143,7 @@ public class CoerceJavaToLua {
 		}
 	}
 
-	static final Map COERCIONS = Collections.synchronizedMap(new HashMap());
+	static final Map<Class<?>, Coercion> COERCIONS = Collections.synchronizedMap(new HashMap<>());
 
 	static {
 		Coercion boolCoercion = new BoolCoercion();
@@ -176,7 +176,7 @@ public class CoerceJavaToLua {
 	 * {@link LuaValue} will be returned without coercion; other types will
 	 * become {@link LuaUserdata}.
 	 *
-	 * @param o Java object needing conversion
+	 * @param o Java object needing caonversion
 	 * @return {@link LuaValue} corresponding to the supplied Java value.
 	 * @see LuaValue
 	 * @see LuaInteger
@@ -187,13 +187,22 @@ public class CoerceJavaToLua {
 	public static LuaValue coerce(Object o) {
 		if (o == null)
 			return LuaValue.NIL;
-		Class clazz = o.getClass();
-		Coercion c = (Coercion) COERCIONS.get(clazz);
+		Class<?> clazz = o.getClass();
+		Coercion c = COERCIONS.get(clazz);
 		if (c == null) {
-			c = clazz.isArray()? arrayCoercion: o instanceof LuaValue? luaCoercion: instanceCoercion;
-			COERCIONS.put(clazz, c);
+			if (clazz.isArray()) {
+				c = arrayCoercion;
+			} else if (o instanceof LuaValue) {
+				c = luaCoercion;
+			} else {
+				c = instanceCoercion;
+			}			COERCIONS.put(clazz, c);
 		}
 		return c.coerce(o);
+	}
+
+	public static <T> void register(Class<T> clazz, Function<T, LuaValue> func) {
+		COERCIONS.put(clazz, obj -> func.apply(clazz.cast(obj)));
 	}
 
 	static final Coercion instanceCoercion = new InstanceCoercion();

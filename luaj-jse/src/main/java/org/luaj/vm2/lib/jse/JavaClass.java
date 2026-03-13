@@ -24,7 +24,6 @@ package org.luaj.vm2.lib.jse;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -46,7 +45,7 @@ import org.luaj.vm2.lib.jse.mapping.TinyParser;
  * @see CoerceJavaToLua
  * @see CoerceLuaToJava
  */
-public class JavaClass extends JavaInstance implements CoerceJavaToLua.Coercion {
+public class JavaClass extends JavaInstance<Class<?>> implements CoerceJavaToLua.Coercion {
 
   static final Map<Class<?>, JavaClass> classes = Collections.synchronizedMap(new HashMap<>());
 
@@ -78,13 +77,13 @@ public class JavaClass extends JavaInstance implements CoerceJavaToLua.Coercion 
     if (fields == null) {
       fields = new HashMap<>();
 
-			for (Field fi : ((Class<?>) m_instance).getFields()) {
+			for (Field fi : m_instance.getFields()) {
 				try {
 					fi.setAccessible(true);
 				} catch (SecurityException ignored) {
 					continue;
 				}
-				fields.put(LuaValue.valueOf(getFieldName(((Class<?>) m_instance), fi)), fi);
+				fields.put(LuaValue.valueOf(getFieldName(m_instance, fi)), fi);
 			}
     }
     return fields.get(key.checkstring());
@@ -95,14 +94,14 @@ public class JavaClass extends JavaInstance implements CoerceJavaToLua.Coercion 
       methods = new HashMap<>();
 
       Map<String, List<JavaMethod>> namedMethods = new HashMap<>();
-      for (Method mi : ((Class<?>) m_instance).getMethods()) {
+      for (Method mi : m_instance.getMethods()) {
 				try{
 					mi.setAccessible(true);
 				} catch (SecurityException e) {
 					continue;
 				}
         namedMethods
-            .computeIfAbsent(getMethodName(((Class<?>) m_instance), mi), k -> new ArrayList<>())
+            .computeIfAbsent(getMethodName(m_instance, mi), k -> new ArrayList<>())
             .add(JavaMethod.forMethod(mi));
       }
 
@@ -115,7 +114,7 @@ public class JavaClass extends JavaInstance implements CoerceJavaToLua.Coercion 
                       : JavaMethod.forMethods(list.toArray(new JavaMethod[0]))));
 
 			List<JavaConstructor> constructors = new ArrayList<>();
-			for (Constructor<?> c : ((Class<?>) m_instance).getDeclaredConstructors()) {
+			for (Constructor<?> c : m_instance.getDeclaredConstructors()) {
 				try {
 					c.setAccessible(true);
 					constructors.add(JavaConstructor.forConstructor(c));
@@ -138,7 +137,7 @@ public class JavaClass extends JavaInstance implements CoerceJavaToLua.Coercion 
   Class<?> getInnerClass(LuaValue key) {
     if (innerClasses == null) {
       Map<LuaString, Class<?>> m = new HashMap<>();
-      Class<?>[] c = ((Class<?>) m_instance).getDeclaredClasses();
+      Class<?>[] c = m_instance.getDeclaredClasses();
       for (Class<?> ci : c) {
         String name = getInnerClassName(ci);
         String stub = name.substring(Math.max(name.lastIndexOf('$'), name.lastIndexOf('.')) + 1);

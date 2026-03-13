@@ -502,7 +502,7 @@ public abstract class Varargs {
 	 * @exception LuaError if the argument is not a userdata or from whose
 	 *                     instance c is not assignable
 	 */
-	public Object checkuserdata(int i, Class c) { return arg(i).checkuserdata(c); }
+	public <T> T checkuserdata(int i, Class<T> c) { return arg(i).checkuserdata(c); }
 
 	/**
 	 * Return argument i as a LuaValue if it exists, or throw an error.
